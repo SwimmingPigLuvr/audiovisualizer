@@ -4,27 +4,82 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let asciiEnabled = true;
 
+let currentSource = 'mp3';
+
 let previousUpdateTime = 0;
 const updateInterval = 1000 / 12;
 
-let camera, controls, scene, renderer, effect, geometry;
 let torus, plane;
-let analyser;
-let micAudio, music;
+let camera, controls, scene, renderer, effect, geometry;
+let analyser, musicAnalyser, micAnalyser;
+let micInput, music;
+
+let listener = new THREE.AudioListener();
+let isMicSetup = false;
 
 const start = Date.now();
 
 init();
 animate();
 
+function initAudio() {
+
+    camera.add(listener);
+
+    // mp3 setup
+    music = new THREE.Audio(listener);
+    musicAnalyser = new THREE.AudioAnalyser(music);
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load('/static/music/lights.mp3', function(buffer) {
+        music.setBuffer(buffer);
+        music.setLoop(true);
+        music.setVolume(0.5);
+        // music.play(); // don't play this immediately
+    });
+}
+
+function changeSource(source) {
+    if (source === 'mp3') {
+        if (micInput) micInput.pause();
+        music.play();
+        analyser = musicAnalyser;
+    } else if (source === 'mic') {
+        music.pause();
+        if (!isMicSetup) {
+            // initial mic setup
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                .then(function(stream) {
+                    micInput = new THREE.Audio(listener);
+                    micInput.setMediaStreamSource(stream);
+                    micAnalyser = new THREE.AudioAnalyser(micInput);
+                    micInput.play();
+                    analyser = micAnalyser;
+                    isMicSetup = true;
+                }).catch(function(err) {
+                    console.error('failed to get audio stream form media devices:', err);
+                });
+        } else {
+            // mic has already been set up, resume
+            micInput.play();
+            analyser = micAnalyser;
+        }
+    }
+
+    currentSource = source;
+}
+
 function init() {
+
+    // camera
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
     camera.position.y = 500;
     camera.position.z = 500;
 
+    // scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0, 0, 0 );
 
+    // lights
     const pointLight1 = new THREE.PointLight( 0xffffff, 5, 0, 0);
     pointLight1.position.set( 500, 500, 500 );
     scene.add( pointLight1 );
@@ -36,6 +91,7 @@ function init() {
     const ambientLight = new THREE.AmbientLight(0x404040);
     scene.add(ambientLight);
 
+    // shape
     geometry = new THREE.PlaneGeometry( 500, 500, 50, 50 ); 
     const material = new THREE.MeshStandardMaterial( { 
         color: 0xffff0,
@@ -45,67 +101,24 @@ function init() {
     torus = new THREE.Mesh( geometry, material ); 
     scene.add( torus );
 
+    // renderer
     renderer = new THREE.WebGLRenderer();
     renderer.setSize( window.innerWidth, window.innerHeight );
 
+    // ascii effect
     effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
     effect.setSize( window.innerWidth, window.innerHeight );
     effect.domElement.style.color = 'white';
     effect.domElement.style.backgroundColor = 'black';
 
-
-    
-
-    // Special case: append effect.domElement, instead of renderer.domElement.
-    // AsciiEffect creates a custom domElement (a div container) where the ASCII elements are placed.
-
-    // audio setup
-    const listener = new THREE.AudioListener();
-    camera.add(listener);
-
-    // load a sound an set it as the Audio object's buffer
-    music = new THREE.Audio(listener);
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load('/static/music/lights.mp3', function(buffer) {
-        music.setBuffer(buffer);
-        music.setLoop(true);
-        music.setVolume(1);
-        music.play();
-    })
-
-
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-        .then(function(stream) {
-
-            // create audio context
-            const audioContext = listener.context;
-
-            // create source
-            const source = audioContext.createMediaStreamSource(stream);
-
-            // create THREEjs audio obj using the listener
-            micAudio = new THREE.Audio(listener);
-            // set media stream source as the audio's input
-            micAudio.setNodeSource(source);
-
-            // create audio analyser
-            analyser = new THREE.AudioAnalyser(micAudio, 64);
-
-        }).catch(function(err) {
-            console.error('failed to get audio stream from media devices:', err);
-        });
-
-
+    // camera controls
     controls = new OrbitControls( camera, renderer.domElement );
-
     controls.enableDamping = true;
     controls.dampingFactor = 0.25;
     controls.screenSpacePanning = false;
 
     window.addEventListener( 'resize', onWindowResize );
 }
-
-
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -114,8 +127,6 @@ function onWindowResize() {
     renderer.setSize( window.innerWidth, window.innerHeight );
     effect.setSize( window.innerWidth, window.innerHeight );
 }
-
-
 
 
 function updateObject() {
@@ -146,9 +157,11 @@ function updateObject() {
     }
 }
 
-
 function animate(timestamp) {
+
     requestAnimationFrame(animate);
+
+    if (!analyser) return;
 
     const delta = timestamp - previousUpdateTime;
 
@@ -158,12 +171,8 @@ function animate(timestamp) {
     }
 
     controls.update();
-
     render();
 }
-
-
-
 
 function toggleAsciiEffect(value) {
     asciiEnabled = value;
@@ -178,9 +187,6 @@ function toggleAsciiEffect(value) {
     }
 }
 
-
-
-
 function render() {
 
     controls.update();
@@ -192,19 +198,24 @@ function render() {
     }
 }
 
-
-
-
 document.getElementById('playButton').addEventListener('click', function() {
-    // check if webaudio api and if the context is suspended
+
     if (THREE.AudioContext.getContext().state === 'suspended') {
         THREE.AudioContext.getContext().resume();
     }
 
-    // play if not already playing
-    if (music && !music.isPlaying) {
+    if (isMicSetup) {
+        if (micInput) micInput.stop();
         music.play();
+        analyser = musicAnalyser; // switch to mp3 visualizer
+    } else {
+        music.stop();
+        micInput.play();
+        analyser = micAnalyser;
     }
+
+    isMicSetup = !isMicSetup;
+
 });
 
 
