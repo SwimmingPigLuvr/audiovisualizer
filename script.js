@@ -2,24 +2,30 @@ import * as THREE from 'three';
 import { AsciiEffect } from 'three/addons/effects/AsciiEffect.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+// enable ascii effect
 let asciiEnabled = true;
 
-let currentSource = 'mp3';
-
+// animate at 12 fps
 let previousUpdateTime = 0;
 const updateInterval = 1000 / 12;
 
+// shape
 let torus, plane;
-let camera, controls, scene, renderer, effect, geometry;
-let analyser, musicAnalyser, micAnalyser;
-let micInput, music;
 
-let listener = new THREE.AudioListener();
+// camera
+let camera, controls, scene, renderer, effect, geometry;
+
+// audio
 let isMicSetup = false;
+let micInput, music, musicAnalyser, micAnalyser;
+let analyser;
+let currentSource = 'mp3';
+let listener = new THREE.AudioListener();
 
 const start = Date.now();
 
 init();
+initAudio();
 animate();
 
 function initAudio() {
@@ -28,7 +34,6 @@ function initAudio() {
 
     // mp3 setup
     music = new THREE.Audio(listener);
-    musicAnalyser = new THREE.AudioAnalyser(music);
     const audioLoader = new THREE.AudioLoader();
     audioLoader.load('/static/music/lights.mp3', function(buffer) {
         music.setBuffer(buffer);
@@ -36,7 +41,12 @@ function initAudio() {
         music.setVolume(0.5);
         // music.play(); // don't play this immediately
     });
+
+    // init music analyser
+    musicAnalyser = new THREE.AudioAnalyser(music);
 }
+
+
 
 function changeSource(source) {
     if (source === 'mp3') {
@@ -67,6 +77,11 @@ function changeSource(source) {
 
     currentSource = source;
 }
+
+// choose audio source
+document.getElementById('audioSource').addEventListener('change', function(e) {
+    changeSource(e.target.value);
+});
 
 function init() {
 
@@ -198,25 +213,6 @@ function render() {
     }
 }
 
-document.getElementById('playButton').addEventListener('click', function() {
-
-    if (THREE.AudioContext.getContext().state === 'suspended') {
-        THREE.AudioContext.getContext().resume();
-    }
-
-    if (isMicSetup) {
-        if (micInput) micInput.stop();
-        music.play();
-        analyser = musicAnalyser; // switch to mp3 visualizer
-    } else {
-        music.stop();
-        micInput.play();
-        analyser = micAnalyser;
-    }
-
-    isMicSetup = !isMicSetup;
-
-});
 
 
 
