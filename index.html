@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>My first three.js app</title>
+        <link rel="stylesheet" rel="stylesheet" href="main.css">
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "../build/three.module.js",
+                    "three/addons": "./jsm"
+                }
+            }
+        </script>
+	</head>
+	<body>
+        <button id="playButton">PLAY</button>
+        <label for="asciiToggle">ASCII texture</label>
+        <input type="checkbox" id="asciiToggle" checked>
+		<script type="module" src="script.js"></script>
+	</body>
+</html>

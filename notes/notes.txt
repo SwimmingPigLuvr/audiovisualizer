@@ -1,0 +1,8 @@
+lights
+shapes 
+colors
+weights
+echoes
+reverb
+round sounds vs sharp sounds
+wet vs dry reverb
