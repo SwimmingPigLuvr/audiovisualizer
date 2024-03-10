@@ -10,7 +10,7 @@ let previousUpdateTime = 0;
 const updateInterval = 1000 / 12;
 
 // shape
-let torus, plane;
+let plane;
 
 // camera
 let camera, controls, scene, renderer, effect, geometry;
@@ -84,22 +84,30 @@ document.getElementById('audioSource').addEventListener('change', function(e) {
 });
 
 function init() {
-
-    // camera
-    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
-    camera.position.y = 500;
-    camera.position.z = 500;
-
     // scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0, 0, 0 );
 
+    // camera
+    camera = new THREE.
+        PerspectiveCamera( 75, 
+            innerWidth / innerHeight, 
+            0.1, 
+            1000 
+        );
+    camera.position.y = 500;
+    camera.position.z = 500;
+
+    // renderer
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize( innerWidth, innerHeight );
+
     // lights
-    const pointLight1 = new THREE.PointLight( 0xffffff, 5, 0, 0);
+    const pointLight1 = new THREE.PointLight( 0xffffff, 3, 100, 0.05);
     pointLight1.position.set( 500, 500, 500 );
     scene.add( pointLight1 );
 
-    const pointLight2 = new THREE.PointLight( 0xffffff, 5, 0, 0 );
+    const pointLight2 = new THREE.PointLight( 0xffffff, 1, 0, 0 );
     pointLight2.position.set( - 500, - 500, - 500 );
     scene.add( pointLight2 );
 
@@ -107,22 +115,19 @@ function init() {
     scene.add(ambientLight);
 
     // shape
-    geometry = new THREE.PlaneGeometry( 500, 500, 50, 50 ); 
+    geometry = new THREE.BoxGeometry( 100, 100, 100 ); 
     const material = new THREE.MeshStandardMaterial( { 
         color: 0xffff0,
         metalness: 1,
-        roughness: 0.5
+        roughness: 1
     } ); 
-    torus = new THREE.Mesh( geometry, material ); 
-    scene.add( torus );
+    plane = new THREE.Mesh( geometry, material ); 
+    scene.add( plane );
 
-    // renderer
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize( window.innerWidth, window.innerHeight );
 
     // ascii effect
     effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
-    effect.setSize( window.innerWidth, window.innerHeight );
+    effect.setSize( innerWidth, innerHeight );
     effect.domElement.style.color = 'white';
     effect.domElement.style.backgroundColor = 'black';
 
@@ -136,39 +141,50 @@ function init() {
 }
 
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    effect.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize( innerWidth, innerHeight );
+    effect.setSize( innerWidth, innerHeight );
 }
 
 
 function updateObject() {
-    if (analyser && torus.geometry.isBufferGeometry) {
+    if (analyser && plane.geometry.isBufferGeometry) {
         // Get frequency data
         const frequencyData = analyser.getFrequencyData();
 
-        // Normalize frequency data for visualization
-        const normalizedData = frequencyData.map(value => value / 255.0); // Normalize to [0, 1]
+        const frequencyParts = 30;
+        const partSize = frequencyData.length / frequencyParts;
 
-        // Apply normalized data to displace the z position of the vertices
-        const positions = torus.geometry.attributes.position;
-        for (let i = 0; i < positions.count; i++) {
-            let zDisplacement = normalizedData[i % normalizedData.length] * 50; // Scale displacement
-            // Update the z position directly
-            positions.setZ(i, zDisplacement);
+        let frequencySlices = [];
+
+        for (let i = 0; i < frequencyParts; i++) {
+            const start = Math.floor(i * partSize);
+            const end = Math.floor(start + partSize);
+            const partData = frequencyData.slice(start, end);
+            const average = partData.reduce((a, b) => a + b, 0) / partData.length;
+
+            frequencySlices.push(average);
         }
+
+        const positions = plane.geometry.attributes.position;
+        let vertexIndex = 0;
+        const verticesPerSlice = Math.floor(positions.count / frequencyParts);
+
+        for (let i = 0; i < frequencySlices.length; i++) {
+            const zDisplacement = frequencySlices[i] / 256 * 50;
+
+            for (let j = 0; j < verticesPerSlice && vertexIndex < positions.count; j++) {
+                positions.setZ(vertexIndex, zDisplacement);
+                vertexIndex++;
+            }
+        }
+
         positions.needsUpdate = true;
 
-        // Optional: Adjust material properties based on the average frequency
-        const avgFrequency = frequencyData.reduce((a, b) => a + b, 0) / frequencyData.length;
-        torus.material.color.setHSL(avgFrequency / 256, 1, 0.5);
-
     } else {
-        // Default behavior if no analyser is available or the geometry isn't buffer geometry
-        // Note: It seems you commented out these lines, indicating they might not be necessary.
-        // If you don't need to update the object when there's no audio input, you can remove this section.
+    
     }
 }
 

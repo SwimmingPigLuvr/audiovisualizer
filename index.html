@@ -5,6 +5,7 @@
 		<title>My first three.js app</title>
         <link rel="stylesheet" rel="stylesheet" href="main.css">
         <link rel="favicon" href="favicon.ico">
+        <link href="./output.css" rel="stylesheet">
         <script type="importmap">
             {
                 "imports": {
@@ -13,14 +14,22 @@
                 }
             }
         </script>
+        <style>
+        </style>
 	</head>
 	<body>
-        <select id="audioSource">
-            <option value="mp3">Lights.mp3</option>
-            <option value="mic">Microphone</option>
-          </select>
-        <label for="asciiToggle">ASCII texture</label>
-        <input type="checkbox" id="asciiToggle" checked>
+        <div class="fixed top-0 left-1/2 flex flex-row bg-sky-300 w-full">
+            <div class="p-2 bg-rose-300">
+                <select id="audioSource">
+                    <option value="mp3">Lights.mp3</option>
+                    <option value="mic">Microphone</option>
+                </select>
+            </div>
+            <div class="p-2 lime-300">
+                <label for="asciiToggle">ASCII texture</label>
+                <input type="checkbox" id="asciiToggle" checked>
+            </div>
+        </div>
 		<script type="module" src="script.js"></script>
 	</body>
 </html>
