@@ -6,3 +6,21 @@ echoes
 reverb
 round sounds vs sharp sounds
 wet vs dry reverb
+
+
+
+effects
+
+camera shake on grainy / lofi / heavy beat
+camera jolt on bass
+
+
+audio selection
+
+song selection should be in its own ui / dropdown
+
+mic should be a toggled selection
+
+ifMic => !music
+
+ifMusic => !noMix

@@ -1,35 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>My first three.js app</title>
-        <link rel="stylesheet" rel="stylesheet" href="main.css">
-        <link rel="favicon" href="favicon.ico">
-        <link href="./output.css" rel="stylesheet">
-        <script type="importmap">
-            {
-                "imports": {
-                    "three": "../build/three.module.js",
-                    "three/addons": "./jsm"
-                }
-            }
-        </script>
-        <style>
-        </style>
-	</head>
-	<body>
-        <div class="fixed top-0 left-1/2 flex flex-row bg-sky-300 w-full">
-            <div class="p-2 bg-rose-300">
+<head>
+    <meta charset="utf-8">
+    <title>My first three.js app</title>
+    <link rel="icon" href="favicon.ico">
+    <link href="main.css" rel="stylesheet">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "../build/three.module.js",
+            "three/addons": "./jsm"
+        }
+    }
+    </script>
+</head>
+<body>
+    <script type="module" src="script.js"></script>
+        <!-- audio controls -->
+        <div class="w-full">
+            <div class="mx-auto p-2">
                 <select id="audioSource">
-                    <option value="mp3">Lights.mp3</option>
+                    <option value="static/music/lights.mp3">Lights.mp3</option>
+                    <option value="static/music/ost.ogg">Milady Maker Theme</option>
                     <option value="mic">Microphone</option>
                 </select>
-            </div>
-            <div class="p-2 lime-300">
-                <label for="asciiToggle">ASCII texture</label>
-                <input type="checkbox" id="asciiToggle" checked>
+                <audio controls src={source} type="audio/ogg" loop="true"></audio>
             </div>
         </div>
-		<script type="module" src="script.js"></script>
-	</body>
+        <div class="fixed right-0 p-2">
+            <label for="asciiToggle">ASCII texture</label>
+            <input type="checkbox" id="asciiToggle" checked>
+        </div>
+</body>
 </html>
